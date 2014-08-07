@@ -2,9 +2,9 @@
 
 from __future__ import print_function
 
-import functools
 import logging
 
+from collections import defaultdict
 from django.conf import settings
 from django.core import mail
 from django.utils import translation
@@ -15,6 +15,7 @@ except ImportError:
     # Django < 1.4.5
     string_types = basestring
 from django.template import loader, TemplateDoesNotExist
+from functools import partial, wraps
 
 from . import models
 from . import exceptions as exc
@@ -42,7 +43,7 @@ def _trap_exception(function):
     Simple decorator for catch template exceptions. If exception is throwed,
     this decorator by default returns an empty string.
     """
-    @functools.wraps(function)
+    @wraps(function)
     def _decorator(*args, **kwargs):
         try:
             return function(*args, **kwargs)
@@ -58,7 +59,7 @@ def _trap_language(function):
     Decorator that intercept a language attribute and set it on context of
     the execution.
     """
-    @functools.wraps(function)
+    @wraps(function)
     def _decorator(self, context):
         language_new = None
         language_old = translation.get_language()
@@ -188,3 +189,46 @@ class MagicMailBuilder(object):
             return email_instance
 
         return _dynamic_email_generator
+
+
+class MagicMailBuilderV2(object):
+
+    def __init__(self, email_attr='email', lang_attr='lang',
+                 name_prototype='{name}', template_mail_cls=TemplateMail):
+        self._email_attr = email_attr
+        self._lang_attr = lang_attr
+        self._name_prototype = name_prototype
+        self._template_mail_cls = template_mail_cls
+
+    def _email_generator(self, to, context, lang=None, name=None,
+                         priority=models.PRIORITY_STANDARD):
+        if not isinstance(to, (list, tuple)):
+            to = [to]
+        lang = context.get('lang', lang)
+
+        # regroup recipients by language
+        to_by_lang = defaultdict(list)
+        for counter, recipient in enumerate(to):
+            try:
+                address = (recipient if isinstance(recipient, string_types)
+                           else getattr(recipient, self._lang_attr))
+            except AttributeError:
+                raise AttributeError(
+                    "'to[{0}]={1}' parameter is not a string neither have the "
+                    "attribute '{2}'".format(counter, recipient, self._email_attr))
+            to_by_lang[getattr(recipient, self._lang_attr, lang)].append(address)
+
+        # create an email instance by language
+        email_by_lang = {}
+        for lang, to in to_by_lang.items():
+            context.pop('lang', None)
+            if lang is not None:
+                context['lang'] = lang
+            template_email = self._template_mail_cls(name=name)
+            email = template_email.make_email_object(to, context)
+            email.priority = priority
+            email_by_lang[lang] = email
+        return email_by_lang
+
+    def __getattr__(self, name):
+        return partial(self._email_generator, name=self._name_prototype.format(name=name))
