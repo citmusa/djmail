@@ -194,7 +194,7 @@ class MagicMailBuilder(object):
 class MagicMailBuilderV2(object):
 
     def __init__(self, email_attr='email', lang_attr='lang',
-                 name_prototype='{name}', template_mail_cls=TemplateMail):
+                 name_prototype='{name}', template_mail_cls=InlineCSSTemplateMail):
         self._email_attr = email_attr
         self._lang_attr = lang_attr
         self._name_prototype = name_prototype
