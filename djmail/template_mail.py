@@ -211,7 +211,7 @@ class MagicMailBuilderV2(object):
         for counter, recipient in enumerate(to):
             try:
                 address = (recipient if isinstance(recipient, string_types)
-                           else getattr(recipient, self._lang_attr))
+                           else getattr(recipient, self._email_attr))
             except AttributeError:
                 raise AttributeError(
                     "'to[{0}]={1}' parameter is not a string neither have the "
