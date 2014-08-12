@@ -200,6 +200,12 @@ class MagicMailBuilderV2(object):
         self._name_prototype = name_prototype
         self._template_mail_cls = template_mail_cls
 
+    def _get_infos(self, recipient):
+        if isinstance(recipient, string_types):
+            return recipient, None
+        return (getattr(recipient, self._email_attr, None),
+                getattr(recipient, self._lang_attr, None))
+
     def _email_generator(self, to, context, lang=None, name=None,
                          priority=models.PRIORITY_STANDARD):
         if not isinstance(to, (list, tuple)):
@@ -209,14 +215,12 @@ class MagicMailBuilderV2(object):
         # regroup recipients by language
         to_by_lang = defaultdict(list)
         for counter, recipient in enumerate(to):
-            try:
-                address = (recipient if isinstance(recipient, string_types)
-                           else getattr(recipient, self._email_attr))
-            except AttributeError:
+            address, lang_ = self._get_infos(recipient)
+            if not address:
                 raise AttributeError(
-                    "'to[{0}]={1}' parameter is not a string neither have the "
-                    "attribute '{2}'".format(counter, recipient, self._email_attr))
-            to_by_lang[getattr(recipient, self._lang_attr, lang)].append(address)
+                    "Unable to retrieve e-mail address from 'to[{0}]={1}'".format(
+                    counter, recipient))
+            to_by_lang[lang_ or lang].append(address)
 
         # create an email instance by language
         email_by_lang = {}
