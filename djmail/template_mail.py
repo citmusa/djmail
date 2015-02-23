@@ -131,7 +131,7 @@ class InlineCSSTemplateMail(TemplateMail):
 
         # Transform CSS into line style attributes
         import premailer
-        return premailer.transform(html)
+        return premailer.transform(html) if html else html
 
 
 class MagicMailBuilder(object):
