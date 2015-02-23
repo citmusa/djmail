@@ -23,9 +23,8 @@ logger = logging.getLogger('djmail')
 
 def _chunked_iterate_queryset(queryset, chunk_size=10):
     """
-    Given a queryset, use paginator for iterate over all queryset
-    but obtaining from database delimeted set of result parametrized
-    with `chunk_size` parameter.
+    Given a queryset, use paginator for iterate over all queryset but obtaining from database delimited set of result
+    parametrized with `chunk_size` parameter.
     """
     paginator = Paginator(queryset, chunk_size)
     for page_index in paginator.page_range:
@@ -36,9 +35,8 @@ def _chunked_iterate_queryset(queryset, chunk_size=10):
 
 def _safe_send_message(message_model, connection):
     """
-    Given a message model, try send it, if send process
-    is fail, increment retry count and save stack trace
-    in message model.
+    Given a message model, try send it, if send process is fail, increment retry count and save stack trace in message
+    model.
     """
     email = message_model.get_email_message()
     sended = 0
@@ -64,10 +62,7 @@ def _safe_send_message(message_model, connection):
 
 
 def _get_real_backend():
-    real_backend_path = getattr(
-        settings,
-        "DJMAIL_REAL_BACKEND",
-        'django.core.mail.backends.console.EmailBackend')
+    real_backend_path = getattr(settings, 'DJMAIL_REAL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
     return get_connection(backend=real_backend_path, fail_silently=False)
 
 
@@ -84,7 +79,7 @@ def _send_messages(email_messages):
 
     sended_counter = 0
     for email, model_instance in zip(email_messages, email_models):
-        if hasattr(email, "priority"):
+        if hasattr(email, 'priority'):
             if email.priority <= models.PRIORITY_LOW:
                 model_instance.priority = email.priority
                 model_instance.status = models.STATUS_PENDING
@@ -103,7 +98,7 @@ def _send_pending_messages():
     Function that sends pending, low priority messages.
     """
     queryset = models.Message.objects.filter(status=models.STATUS_PENDING)\
-                                     .order_by("-priority", "created_at")
+                                     .order_by('-priority', 'created_at')
     connection = _get_real_backend()
     connection.open()
 
@@ -120,10 +115,10 @@ def _retry_send_messages():
     """
     Function that retry send failed messages.
     """
-    max_retry_value = getattr(settings, "DJMAIL_MAX_RETRY_NUMBER", 3)
+    max_retry_value = getattr(settings, 'DJMAIL_MAX_RETRY_NUMBER', 3)
     queryset = models.Message.objects.filter(status=models.STATUS_FAILED)\
                                      .filter(retry_count__lte=max_retry_value)\
-                                     .order_by("-priority", "created_at")
+                                     .order_by('-priority', 'created_at')
 
     connection = _get_real_backend()
     connection.open()
@@ -142,7 +137,6 @@ def _mark_discarded_messages():
     number and marks its as discarded messages.
     """
 
-    max_retry_value = getattr(settings, "DJMAIL_MAX_RETRY_NUMBER", 3)
-    queryset = models.Message.objects.filter(status=models.STATUS_FAILED,
-                                             retry_count__gt=max_retry_value)
+    max_retry_value = getattr(settings, 'DJMAIL_MAX_RETRY_NUMBER', 3)
+    queryset = models.Message.objects.filter(status=models.STATUS_FAILED, retry_count__gt=max_retry_value)
     return queryset.update(status=models.STATUS_DISCARDED)

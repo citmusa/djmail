@@ -31,10 +31,10 @@ PRIORITY_STANDARD = 50
 
 class Message(models.Model):
     STATUS_CHOICES = (
-        (STATUS_DRAFT, "Draft"),
-        (STATUS_SENT, "Sent"),
-        (STATUS_FAILED, "Failed"),
-        (STATUS_DISCARDED, "Discarded"),
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_SENT, 'Sent'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_DISCARDED, 'Discarded')
     )
 
     uuid = models.CharField(max_length=40, primary_key=True)
@@ -62,16 +62,16 @@ class Message(models.Model):
     @classmethod
     def from_email_message(cls, email_message, save=False):
         kwargs = {
-            "from_email": force_text(email_message.from_email),
-            "to_email": ",".join(force_text(x) for x in email_message.to),
-            "body_text": force_text(email_message.body),
-            "subject": force_text(email_message.subject),
-            "data": base64.b64encode(pickle.dumps(email_message)),
+            'from_email': force_text(email_message.from_email),
+            'to_email': ','.join(force_text(x) for x in email_message.to),
+            'body_text': force_text(email_message.body),
+            'subject': force_text(email_message.subject),
+            'data': base64.b64encode(pickle.dumps(email_message)),
         }
 
-        if hasattr(email_message, "alternatives") and len(email_message.alternatives) > 0:
-            html_alts = [x[0] for x in email_message.alternatives if x[1] == "text/html"]
-            kwargs["body_html"] = html_alts[0] if len(html_alts) > 0 else ""
+        if hasattr(email_message, 'alternatives') and len(email_message.alternatives) > 0:
+            html_alts = [x[0] for x in email_message.alternatives if x[1] == 'text/html']
+            kwargs['body_html'] = html_alts[0] if len(html_alts) > 0 else ''
 
         instance = cls(**kwargs)
         if save:
@@ -80,9 +80,9 @@ class Message(models.Model):
         return instance
 
     class Meta:
-        ordering = ["created_at"]
-        verbose_name = "Message"
-        verbose_name_plural = "Messages"
+        ordering = ['created_at']
+        verbose_name = 'Message'
+        verbose_name_plural = 'Messages'
 
 
 @receiver(pre_save, sender=Message, dispatch_uid='message_uuid_signal')
