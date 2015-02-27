@@ -31,14 +31,14 @@ class EmailBackend(base.BaseEmailBackend):
     """
     Asynchronous email back-end that uses a thread pool for sending emails.
     """
-    def _send_messages(self, email_messages):
-        if len(email_messages) == 0:
+    def send_messages(self, emails):
+        if len(emails) == 0:
             future = Future()
             future.set_result(0)
             return future
 
         @_close_connection_on_finish
         def _send(messages):
-            return core._send_messages(email_messages)
+            return core._send_messages(emails)
 
-        return executor.submit(_send, email_messages)
+        return executor.submit(_send, emails)

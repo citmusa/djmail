@@ -10,8 +10,5 @@ class EmailBackend(base.BaseEmailBackend):
     """
     Asynchronous email back-end that uses celery task for sending emails.
     """
-    def _send_messages(self, email_messages):
-        if len(email_messages) == 0:
-            return 0
-
-        return tasks.send_messages.delay(email_messages)
+    def send_messages(self, emails):
+        return tasks.send_messages.delay(emails) if len(emails) else 0
