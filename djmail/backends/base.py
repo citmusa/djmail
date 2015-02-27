@@ -3,10 +3,8 @@
 
 class BaseEmailBackend(object):
     """
-    Base class that implements a django
-    mail backend interface.
+    Base class that implements a Django email back-end interface.
     """
-
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs

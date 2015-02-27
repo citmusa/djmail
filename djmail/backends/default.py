@@ -7,8 +7,8 @@ from .. import core
 
 
 class EmailBackend(base.BaseEmailBackend):
-    def _send_messages(self, email_messages):
-        if len(email_messages) == 0:
-            return 0
-
-        return core._send_messages(email_messages)
+    """
+    Default email back-end that sends e-mails synchronously.
+    """
+    def send_messages(self, email_messages):
+        return core._send_messages(email_messages) if len(email_messages) else 0
