@@ -29,31 +29,27 @@ def _chunked_iterate_queryset(queryset, chunk_size=10):
             yield item
 
 
-def _safe_send_message(message_model, connection):
+def _safe_send_message(instance, connection):
     """
     Given a message model, try to send it, if it fails, increment retry count and save stack trace in message model.
     """
-    email = message_model.get_email_message()
-    sended = 0
-
-    with StringIO() as f:
-        try:
-            sended = connection.send_messages([email])
-        except Exception:
+    email = instance.get_email_message()
+    try:
+        num_sent = connection.send_messages([email])
+    except:
+        with StringIO() as f:
             traceback.print_exc(file=f)
-            f.seek(0)
-            message_model.exception = f.read()
-            logger.error(message_model.exception)
+            instance.exception = f.getvalue()
+        logger.error(instance.exception)
+    else:
+        if num_sent == 1:
+            instance.status = models.STATUS_SENT
+            instance.sent_at = timezone.now()
         else:
-            if sended == 1:
-                message_model.status = models.STATUS_SENT
-                message_model.sent_at = timezone.now()
-            else:
-                message_model.status = models.STATUS_FAILED
-                message_model.retry_count += 1
-
-        message_model.save()
-        return sended
+            instance.status = models.STATUS_FAILED
+            instance.retry_count += 1
+    instance.save()
+    return num_sent
 
 
 def _get_real_backend():
@@ -61,14 +57,14 @@ def _get_real_backend():
     return get_connection(backend=real_backend_path, fail_silently=False)
 
 
-def _send_messages(email_messages):
+def _send_messages(emails):
     # Save messages in database for correct tracking of their status
-    emails = [(email, models.Message.from_email_message(email, save=True)) for email in email_messages]
+    emails_with_instances = [(email, models.Message.from_email_message(email, save=True)) for email in emails]
     connection = _get_real_backend()
     connection.open()
     try:
         sended_counter = 0
-        for email, instance in emails:
+        for email, instance in emails_with_instances:
             if hasattr(email, 'priority'):
                 if email.priority <= models.PRIORITY_LOW:
                     instance.priority = email.priority
@@ -104,10 +100,8 @@ def _retry_send_messages():
     Retry to send failed messages.
     """
     max_retry_value = getattr(settings, 'DJMAIL_MAX_RETRY_NUMBER', 3)
-    queryset = models.Message.objects.filter(status=models.STATUS_FAILED)\
-                                     .filter(retry_count__lte=max_retry_value)\
+    queryset = models.Message.objects.filter(retry_count__lte=max_retry_value, status=models.STATUS_FAILED)\
                                      .order_by('-priority', 'created_at')
-
     connection = _get_real_backend()
     connection.open()
     try:
@@ -124,5 +118,5 @@ def _mark_discarded_messages():
     Search messages exceeding the global retry limit and marks them as discarded.
     """
     max_retry_value = getattr(settings, 'DJMAIL_MAX_RETRY_NUMBER', 3)
-    queryset = models.Message.objects.filter(status=models.STATUS_FAILED, retry_count__gt=max_retry_value)
+    queryset = models.Message.objects.filter(retry_count__gt=max_retry_value, status=models.STATUS_FAILED)
     return queryset.update(status=models.STATUS_DISCARDED)
