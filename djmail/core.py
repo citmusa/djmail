@@ -34,6 +34,7 @@ def _safe_send_message(instance, connection):
     Given a message model, try to send it, if it fails, increment retry count and save stack trace in message model.
     """
     email = instance.get_email_message()
+    num_sent = 0
     try:
         num_sent = connection.send_messages([email])
     except:
