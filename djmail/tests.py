@@ -7,11 +7,11 @@ from django.core import mail
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from . import models
 from . import core
-from .template_mail import TemplateMail
-from .template_mail import MagicMailBuilder
+from . import models
 from .template_mail import make_email
+from .template_mail import MagicMailBuilder
+from .template_mail import TemplateMail
 
 
 class TestEmailSending(TestCase):

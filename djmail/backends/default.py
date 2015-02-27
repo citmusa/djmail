@@ -1,8 +1,9 @@
 # -*- encoding: utf-8 -*-
 
-from djmail import core
+from __future__ import absolute_import
 
 from . import base
+from .. import core
 
 
 class EmailBackend(base.BaseEmailBackend):

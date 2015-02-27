@@ -3,9 +3,8 @@
 from __future__ import unicode_literals
 
 import logging
-from contextlib import contextmanager
-
 from collections import defaultdict
+from contextlib import contextmanager
 from django.conf import settings
 from django.core import mail
 from django.utils import translation
